@@ -14,9 +14,6 @@ import fitz
 import tempfile
 
 nltk.download('punkt')
-text = process_file(file_path, file_type)
-
-
 
 # Configurações
 st.set_page_config(page_title="🔍 Talent Hunter Pro", layout="wide")
@@ -49,26 +46,20 @@ def process_file(file_path, file_type):
             text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
         
         if text:
-            # Tokenizar o texto extraído
             tokens = word_tokenize(text)
-            return text.strip(), tokens
+            return text.strip()
         else:
-            return "", []
-
+            return ""
     except Exception as e:
         st.warning(f"Erro ao processar {os.path.basename(file_path)}: {str(e)}")
-        return "", []
-
+        return ""
 
 # Análise semântica com tratamento de acentos
 def analyze_resume(text, job_keywords):
-    # Usando SentenceTransformer para cálculo de similaridade
     job_text = f"{job_keywords}"
     job_embedding = model.encode(job_text, convert_to_tensor=True)
     resume_embedding = model.encode(text, convert_to_tensor=True)
     score = util.cos_sim(job_embedding, resume_embedding).item()
-    
-    # Simples contagem de palavras-chave no texto
     matches = sum(1 for keyword in job_keywords if keyword in text)
     return matches, score
 
@@ -83,7 +74,6 @@ def render_document(file_path, file_type):
         else:
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
                 temp_path = tmp.name
-            
             convert(file_path, temp_path)
             img = render_document(temp_path, "pdf")
             os.unlink(temp_path)
@@ -94,16 +84,15 @@ def render_document(file_path, file_type):
 
 # Interface principal
 def main():
+    global model
     model = load_models()
     if model is None:
         return
 
-    # Configurações
     st.sidebar.header("Configurações")
     min_score = st.sidebar.slider("Score mínimo", 0.0, 1.0, 0.3)
     min_matches = st.sidebar.slider("Mínimo de correspondências", 0, 20, 2)
 
-    # Entrada de dados
     col1, col2 = st.columns(2)
     with col1:
         job_title = st.text_input("🎯 Cargo desejado (obrigatório):", placeholder="Analista de Dados")
@@ -115,10 +104,8 @@ def main():
     if st.button("🔍 Analisar Currículos", type="primary") and job_title and folder_path and os.path.exists(folder_path):
         with st.spinner(f"Analisando currículos em {folder_path}..."):
             try:
-                # Pré-processamento das palavras-chave
                 job_keywords = [job_title] + [word for word in re.findall(r'\w{4,}', job_desc) if len(word) > 3]
                 
-                # Processar todos os arquivos
                 results = []
                 valid_files = [f for f in os.listdir(folder_path) if f.lower().endswith(('.pdf', '.docx'))]
                 
@@ -135,7 +122,6 @@ def main():
                     if not text:
                         continue
                     
-                    # Análise detalhada
                     matches, score = analyze_resume(text, job_keywords)
                     if matches < min_matches:
                         continue
@@ -156,13 +142,10 @@ def main():
                     st.warning("Nenhum currículo atendeu aos critérios mínimos!")
                     return
 
-                # Ordenar resultados
                 results = sorted(results, key=lambda x: x['Score'], reverse=True)
 
-                # Exibir resultados
                 st.success(f"✅ {len(results)} currículos relevantes encontrados")
 
-                # Gráfico
                 st.subheader("Distribuição de Adequação")
                 fig, ax = plt.subplots()
                 ax.hist([r['Score'] for r in results], bins=15, color='skyblue', edgecolor='black')
@@ -170,7 +153,6 @@ def main():
                 ax.set_ylabel('Número de Candidatos')
                 st.pyplot(fig)
 
-                # Tabela de resultados
                 st.subheader("Ranking de Candidatos")
                 df = pd.DataFrame.from_records(results)
                 st.dataframe(df[['Arquivo', 'Score', 'Matches']], hide_index=True, use_container_width=True)
