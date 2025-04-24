@@ -9,7 +9,6 @@ from docx import Document
 from PIL import Image
 import nltk
 from nltk.tokenize import word_tokenize
-from spacy.matcher import PhraseMatcher
 from sentence_transformers import SentenceTransformer, util
 import fitz
 from docx2pdf import convert
