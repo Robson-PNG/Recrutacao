@@ -7,12 +7,16 @@ import matplotlib.pyplot as plt
 import pdfplumber
 from docx import Document
 from PIL import Image
-import spacy
+import nltk
+from nltk.tokenize import word_tokenize
 from spacy.matcher import PhraseMatcher
 from sentence_transformers import SentenceTransformer, util
 import fitz
 from docx2pdf import convert
 import tempfile
+
+nltk.download('punkt')
+tokens = word_tokenize(text)
 
 # Configurações
 st.set_page_config(page_title="🔍 Talent Hunter Pro", layout="wide")
