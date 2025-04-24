@@ -30,20 +30,12 @@ def normalize_text(text):
 @st.cache_resource
 def load_models():
     try:
-        # Verificar e instalar modelo spaCy se necessário
-        try:
-            nlp = spacy.load("pt_core_news_lg")
-        except:
-            st.warning("Instalando modelo de português...")
-            os.system("python -m spacy download pt_core_news_lg")
-            nlp = spacy.load("pt_core_news_lg")
-        
         # Carregar modelo de similaridade
         model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-        return model, nlp
+        return model
     except Exception as e:
-        st.error(f"Falha ao carregar modelos: {str(e)}")
-        return None, None
+        st.error(f"Falha ao carregar o modelo: {str(e)}")
+        return None
 
 # Processar cada arquivo individualmente
 def process_file(file_path, file_type):
@@ -60,21 +52,16 @@ def process_file(file_path, file_type):
         return ""
 
 # Análise semântica com tratamento de acentos
-def analyze_resume(text, nlp, job_keywords):
-    try:
-        doc = nlp(normalize_text(text))
-        
-        # Configurar matcher com palavras-chave normalizadas
-        matcher = PhraseMatcher(nlp.vocab)
-        patterns = [nlp(normalize_text(keyword)) for keyword in job_keywords]
-        matcher.add("JOB_KEYWORDS", patterns)
-        matches = matcher(doc)
-        
-        matched_keywords = list(set([doc[start:end].text for _, start, end in matches]))
-        return len(matches), matched_keywords
-    except Exception as e:
-        st.warning(f"Erro na análise: {str(e)}")
-        return 0, []
+def analyze_resume(text, job_keywords):
+    # Usando SentenceTransformer para cálculo de similaridade
+    job_text = f"{job_keywords}"
+    job_embedding = model.encode(job_text, convert_to_tensor=True)
+    resume_embedding = model.encode(text, convert_to_tensor=True)
+    score = util.cos_sim(job_embedding, resume_embedding).item()
+    
+    # Simples contagem de palavras-chave no texto
+    matches = sum(1 for keyword in job_keywords if keyword in text)
+    return matches, score
 
 # Visualização segura de documentos
 def render_document(file_path, file_type):
@@ -98,7 +85,7 @@ def render_document(file_path, file_type):
 
 # Interface principal
 def main():
-    model, nlp = load_models()
+    model = load_models()
     if model is None:
         return
 
@@ -140,15 +127,9 @@ def main():
                         continue
                     
                     # Análise detalhada
-                    matches, keywords = analyze_resume(text, nlp, job_keywords)
+                    matches, score = analyze_resume(text, job_keywords)
                     if matches < min_matches:
                         continue
-                    
-                    # Cálculo de similaridade
-                    job_text = f"{job_title}. {job_desc}"
-                    job_embedding = model.encode(job_text, convert_to_tensor=True)
-                    resume_embedding = model.encode(text, convert_to_tensor=True)
-                    score = util.cos_sim(job_embedding, resume_embedding).item()
                     
                     if score >= min_score:
                         results.append({
@@ -157,8 +138,7 @@ def main():
                             "Tipo": file_type,
                             "Texto": text,
                             "Score": score,
-                            "Matches": matches,
-                            "Keywords": ", ".join(keywords[:10])  # Limita a 10 palavras-chave
+                            "Matches": matches
                         })
                     
                     progress_bar.progress((i + 1) / len(valid_files))
@@ -184,36 +164,7 @@ def main():
                 # Tabela de resultados
                 st.subheader("Ranking de Candidatos")
                 df = pd.DataFrame.from_records(results)
-                st.dataframe(
-                    df[['Arquivo', 'Score', 'Matches', 'Keywords']],
-                    column_config={
-                        "Score": st.column_config.ProgressColumn(
-                            format="%.2f",
-                            min_value=0,
-                            max_value=1
-                        )
-                    },
-                    hide_index=True,
-                    use_container_width=True
-                )
-
-                # Visualização detalhada
-                st.subheader("Análise Detalhada")
-                for res in results:
-                    with st.expander(f"{res['Arquivo']} - Score: {res['Score']:.2f}"):
-                        tab1, tab2 = st.tabs(["Documento", "Análise"])
-                        
-                        with tab1:
-                            img = render_document(res['Caminho'], res['Tipo'])
-                            if img:
-                                st.image(img, use_column_width=True)
-                            else:
-                                st.warning("Visualização não disponível")
-                        
-                        with tab2:
-                            st.write(f"**Correspondências:** {res['Matches']}")
-                            st.write(f"**Palavras-chave:** {res['Keywords']}")
-                            st.text_area("Texto extraído:", value=res['Texto'][:5000], height=300)
+                st.dataframe(df[['Arquivo', 'Score', 'Matches']], hide_index=True, use_container_width=True)
 
             except Exception as e:
                 st.error(f"Erro durante a análise: {str(e)}")
