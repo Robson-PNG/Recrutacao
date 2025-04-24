@@ -14,7 +14,8 @@ import fitz
 import tempfile
 
 nltk.download('punkt')
-text, tokens = process_file(file_path, file_type)
+text = process_file(file_path, file_type)
+
 
 
 # Configurações
