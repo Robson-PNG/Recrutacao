@@ -47,10 +47,18 @@ def process_file(file_path, file_type):
         else:
             doc = Document(file_path)
             text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-        return text.strip()
+        
+        if text:
+            # Tokenizar o texto extraído
+            tokens = word_tokenize(text)
+            return text.strip(), tokens
+        else:
+            return "", []
+
     except Exception as e:
         st.warning(f"Erro ao processar {os.path.basename(file_path)}: {str(e)}")
-        return ""
+        return "", []
+
 
 # Análise semântica com tratamento de acentos
 def analyze_resume(text, job_keywords):
