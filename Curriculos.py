@@ -11,7 +11,6 @@ import nltk
 from nltk.tokenize import word_tokenize
 from sentence_transformers import SentenceTransformer, util
 import fitz
-from docx2pdf import convert
 import tempfile
 
 nltk.download('punkt')
