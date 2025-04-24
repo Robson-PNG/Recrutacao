@@ -1,4 +1,10 @@
 streamlit
-matplotlib
 pandas
-numpy
+matplotlib
+pdfplumber
+python-docx
+Pillow
+spacy
+sentence-transformers
+PyMuPDF
+docx2pdf
