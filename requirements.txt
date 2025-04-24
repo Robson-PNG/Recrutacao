@@ -9,3 +9,5 @@ sentence-transformers
 PyMuPDF
 docx2pdf
 
+# Modelo do spaCy (Português - Large)
+https://github.com/explosion/spacy-models/releases/download/pt_core_news_lg-3.7.0/pt_core_news_lg-3.7.0-py3-none-any.whl
