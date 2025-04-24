@@ -8,3 +8,4 @@ spacy
 sentence-transformers
 PyMuPDF
 docx2pdf
+
