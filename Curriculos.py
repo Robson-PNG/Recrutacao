@@ -15,7 +15,8 @@ from docx2pdf import convert
 import tempfile
 
 nltk.download('punkt')
-tokens = word_tokenize(text)
+text, tokens = process_file(file_path, file_type)
+
 
 # Configurações
 st.set_page_config(page_title="🔍 Talent Hunter Pro", layout="wide")
